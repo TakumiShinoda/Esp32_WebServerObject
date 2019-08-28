@@ -15,6 +15,8 @@ void hogeCallback(ChainArray queries, ChainArray requests, String *response, WiF
 void setup(){
   Html hogeHtml("hoge", &hogeCallback);
 
+  Serial.begin(115200);
+
   connectAP(SSID, PASS);
 
   server.addServer(PORT);
