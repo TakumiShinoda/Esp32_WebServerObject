@@ -1,0 +1,11 @@
+.pio
+.pioenvs
+.piolibdeps
+
+.DS_Store
+.vscode
+include
+lib
+test
+.travis.yml
+local_property.h
