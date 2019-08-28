@@ -1,1 +1,1 @@
-curl -X POST -H "Content-Type: application/json" -d '{"Name":"sensuikan1973", "Age":"100"}' 192.168.10.4:80/hog
+curl -X POST -H "Content-Type: application/json" -d '{"Name":"sensuikan1973", "Age":"100"}' 192.168.10.4/hoge

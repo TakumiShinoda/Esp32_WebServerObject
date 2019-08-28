@@ -29,13 +29,12 @@ ChainArray Utils::analyzeQuery(String str){
   return result;
 }
 
-ChainArray Utils::analyzeGetRequest(String request, String method){
+ChainArray Utils::analyzeRequestLine(String request){
   ChainArray result;
-  ChainArray queries;
   String path = "";
   String params = "";
 
-  if(request.indexOf(method) != 0) return result;
+  if(request.indexOf("GET") != 0 && request.indexOf("POST") != 0) return result;
   split(request, ' ', 1).indexOf("/") == 0 ? path = split(request, ' ', 1) : path = "";
   if(path.indexOf("?") >= 0){
     params = path.substring(path.indexOf("?") + 1);
@@ -189,6 +188,11 @@ String Utils::getMAC(){
   WiFi.macAddress(mac_addr);
   sprintf(buf, "%02X:%02X:%02X:%02X:%02X:%02X", mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
   return buf;
+}
+
+void Utils::debugPrint(String head, String message){
+  Serial.print(head + ": ");
+  Serial.println(message);
 }
 
 // About StatusGen

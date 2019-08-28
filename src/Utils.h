@@ -22,7 +22,7 @@ class StatusGen{
 
 class Utils{
   public:
-    ChainArray analyzeGetRequest(String request, String method);
+    ChainArray analyzeRequestLine(String request);
     String split(String target, char sep, uint8_t index);
     ChainArray analyzeQuery(String str);
     std::vector<uint8_t> vector_find(std::vector<String> target, String str);
@@ -31,6 +31,7 @@ class Utils{
     bool checkFormat(std::string target, char c, std::vector<bool> rule);
     String decodeUrl(String input);
     String getMAC();
+    void debugPrint(String head, String message);
 };
 
 #endif

@@ -56,7 +56,7 @@ void ServerObject::requestHandle(std::vector<uint16_t> ports){
 }
 
 void ServerObject::requestHandle_proc(uint16_t port){
-  uint16_t serverPos = 0;
+  uint16_t serverIndex = 0; 
   String line = "";
   String path = "";
   ChainArray request;
@@ -67,161 +67,158 @@ void ServerObject::requestHandle_proc(uint16_t port){
   for(int i = 0; i < Servers.size(); i++){
     if(Servers[i].port != port) continue;
 
-    serverPos = i;
-    client = Servers[serverPos].server.available();
+    serverIndex = i;
+    client = Servers[serverIndex].server.available();
     break;
   } 
 
   if(!client) return;
-  if(!client.connected())
+  if(!client.connected()) return;
 
   Serial.println("New Client");
   while(client.available()){
     line = client.readStringUntil('\n');
     path = "";
+    request = utils->analyzeRequestLine(line); 
+    request.add("port", String(Servers[serverIndex].port));
 
-    Serial.println(line);
-
-    if(line.indexOf("GET") >= 0){
-      request = utils->analyzeGetRequest(line, "GET");
+    if(line.indexOf("GET") == 0){
       request.add("method", "GET");
-      path = request.get("path");
-      queries = utils->analyzeQuery(request.get("params"));
-      keys = queries.keys();
 
-      Serial.print("From: ");
-      Serial.println(client.remoteIP());
-
-      Serial.print("Path: ");
-      Serial.println(path);
-
-      Serial.print("port: ");
-      Serial.println(Servers[serverPos].port);
-
-      if(Servers[serverPos].Responses.size() == 0){
-        sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
-        sendGetResponseBody(&client, notFoundResp);
-      }else{
-        for(int i = 0; i < Servers[serverPos].Responses.size(); i++){
-          String registeredPath = Servers[serverPos].Responses[i].url;
-
-          if(path == registeredPath){
-            String respHtml = Servers[serverPos].Responses[i].response;
-
-            sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverPos].Responses[i].respType);
-            Servers[serverPos].Responses[i].prevCallback(queries, request, &respHtml, &client);
-            sendGetResponseBody(&client, respHtml);
-            break;
-          }else if(
-            registeredPath.substring(registeredPath.length() - 2) == "/*"  && 
-            path.indexOf(registeredPath.substring(0, registeredPath.length() - 2)) == 0 
-          ){
-            String respHtml = Servers[serverPos].Responses[i].response;
-            String wildRootPath = registeredPath.substring(0, registeredPath.length() - 2);
-
-            request.add("wildRootPath", wildRootPath);
-            request.add("wildPath", path.substring(wildRootPath.length()));
-            sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverPos].Responses[i].respType);
-            Servers[serverPos].Responses[i].prevCallback(queries, request, &respHtml, &client);
-            sendGetResponseBody(&client, respHtml);
-            break;
-          }
-          if(i == Servers[serverPos].Responses.size() - 1){
-            sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
-            sendGetResponseBody(&client, notFoundResp);
-            break;
-          }
-        }
-      }
-      client.stop();
+      requestHandle_get(client, serverIndex, request);
     }else if(line.indexOf("POST") == 0){
-      bool bodyFlag = false;
-      String body = "";
-      String contentType = "";
-
-      Serial.println("POST");
-
-      while(client.available()){
-        String postLine = client.readStringUntil('\n');
-
-        postLine.replace("\r", "");
-        if(postLine.length() > 0){
-          Serial.println("Test: " + postLine);
-          Serial.println(postLine.length());
-        }
-        Serial.println("----------------");
-        if(postLine.indexOf("Content-Type:") == 0){
-          contentType = postLine.substring(13);
-          contentType.replace(" ", "");
-          contentType.replace("\n", "");
-          contentType.replace("\r", "");
-        }
-        if(bodyFlag) body += postLine;
-        if(postLine == "") bodyFlag = true;
-      }
-
-      request = utils->analyzeGetRequest(line, "POST");
-      path = request.get("path");
-
-      if(contentType == RESPTYPE_JSON){
-        ChainArray forJsonContent = ChainArray();
-
-        forJsonContent.add("body", body);
-        queries = forJsonContent;
-      }else queries = utils->analyzeQuery(body);
-
       request.add("method", "POST");
-      request.add("contentType", contentType);
 
-      Serial.println("Body: " + body);
-      Serial.println("Content-Type" + contentType);
+      requestHandle_post(client, serverIndex, request);
+    }
+  }
+}
 
-      Serial.print("From: ");
-      Serial.println(client.remoteIP());
+void ServerObject::requestHandle_get(WiFiClient client, uint16_t serverIndex, ChainArray request){ 
+  // uint8_t serverPos = request.get("port").toInt();
+  String path = request.get("path");
+  ChainArray queries = utils->analyzeQuery(request.get("params"));
 
-      Serial.print("Path: ");
-      Serial.println(path);
+  Serial.print("From: ");
+  Serial.println(client.remoteIP());
 
-      Serial.print("port: ");
-      Serial.println(Servers[serverPos].port);
+  Serial.print("Path: ");
+  Serial.println(path);
 
-      Serial.print("size: ");
-      Serial.println(Servers[serverPos].Responses.size());
+  Serial.print("port: ");
+  Serial.println(Servers[serverIndex].port);
 
-      if(Servers[serverPos].Responses.size() == 0){
+  if(Servers[serverIndex].Responses.size() == 0){
+    sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
+    sendGetResponseBody(&client, notFoundResp);
+  }else{
+    for(int i = 0; i < Servers[serverIndex].Responses.size(); i++){
+      String registeredPath = Servers[serverIndex].Responses[i].url;
+
+      if(path == registeredPath){
+        String respHtml = Servers[serverIndex].Responses[i].response;
+
+        sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverIndex].Responses[i].respType);
+        Servers[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
+        sendGetResponseBody(&client, respHtml);
+        break;
+      }else if(
+        registeredPath.substring(registeredPath.length() - 2) == "/*"  && 
+        path.indexOf(registeredPath.substring(0, registeredPath.length() - 2)) == 0 
+      ){
+        String respHtml = Servers[serverIndex].Responses[i].response;
+        String wildRootPath = registeredPath.substring(0, registeredPath.length() - 2);
+
+        request.add("wildRootPath", wildRootPath);
+        request.add("wildPath", path.substring(wildRootPath.length()));
+        sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverIndex].Responses[i].respType);
+        Servers[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
+        sendGetResponseBody(&client, respHtml);
+        break;
+      }
+      if(i == Servers[serverIndex].Responses.size() - 1){
         sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
         sendGetResponseBody(&client, notFoundResp);
-      }else{
-        for(int i = 0; i < Servers[serverPos].Responses.size(); i++){
-          String registeredPath = Servers[serverPos].Responses[i].url;
-
-          if(path == registeredPath){
-            String respHtml = Servers[serverPos].Responses[i].response;
-
-            sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverPos].Responses[i].respType);
-            Servers[serverPos].Responses[i].prevCallback(queries, request, &respHtml, &client);
-            sendGetResponseBody(&client, respHtml);
-            break;
-          }else if(
-            registeredPath.substring(registeredPath.length() - 2) == "/*"  && 
-            path.indexOf(registeredPath.substring(0, registeredPath.length() - 1)) == 0 
-          ){
-            String respHtml = Servers[serverPos].Responses[i].response;
-            String wildRootPath = registeredPath.substring(0, registeredPath.length() - 1);
-
-            request.add("wildRootPath", wildRootPath);
-            request.add("wildPath", path.substring(wildRootPath.length()));
-            sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverPos].Responses[i].respType);
-            Servers[serverPos].Responses[i].prevCallback(queries, request, &respHtml, &client);
-            sendGetResponseBody(&client, respHtml);
-            break;
-          }else if(i == Servers[serverPos].Responses.size() - 1){
-            sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
-            sendGetResponseBody(&client, notFoundResp);
-            break;
-          }
-        }
+        break;
       }
+    }
+  }
+  client.stop();
+}
+
+void ServerObject::requestHandle_post(WiFiClient client, uint16_t serverIndex, ChainArray request){
+  bool bodyFlag = false;
+  String body = "";
+  String contentType = ""; 
+  ChainArray queries = ChainArray();
+  String path = request.get("path");
+  uint8_t serverPort = request.get("port").toInt();
+
+  Serial.println("POST");
+
+  while(client.available()){
+    String postLine = client.readStringUntil('\n');
+
+    postLine.replace("\r", "");
+    if(postLine.indexOf("Content-Type:") == 0){
+      contentType = postLine.substring(13);
+      contentType.replace(" ", "");
+      contentType.replace("\n", "");
+      contentType.replace("\r", "");
+    }
+    if(bodyFlag) body += postLine;
+    if(postLine == "") bodyFlag = true;
+  }
+
+  if(contentType == RESPTYPE_JSON){
+    ChainArray forJsonContent = ChainArray();
+
+    forJsonContent.add("body", body);
+    queries = forJsonContent;
+  }else queries = utils->analyzeQuery(body);
+
+  request.add("method", "POST");
+  request.add("contentType", contentType);
+
+  utils->debugPrint("Content-Type", contentType);
+  utils->debugPrint("Body", body);
+  utils->debugPrint("From", String(client.remoteIP()));
+  utils->debugPrint("Path", path);
+  utils->debugPrint("Port", String(serverPort));
+
+  if(Servers[serverIndex].Responses.size() == 0){
+    sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
+    sendGetResponseBody(&client, notFoundResp);
+    return;
+  }
+
+  for(int i = 0; i < Servers[serverIndex].Responses.size(); i++){
+    String registeredPath = Servers[serverIndex].Responses[i].url;
+
+    if(path == registeredPath){
+      String respHtml = Servers[serverIndex].Responses[i].response;
+
+      sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverIndex].Responses[i].respType);
+      Servers[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
+      sendGetResponseBody(&client, respHtml);
+      break;
+    }else if(
+      registeredPath.substring(registeredPath.length() - 2) == "/*" && 
+      path.indexOf(registeredPath.substring(0, registeredPath.length() - 1)) == 0 
+    ){
+      String respHtml = Servers[serverIndex].Responses[i].response;
+      String wildRootPath = registeredPath.substring(0, registeredPath.length() - 1);
+
+      request.add("wildRootPath", wildRootPath);
+      request.add("wildPath", path.substring(wildRootPath.length()));
+      sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverIndex].Responses[i].respType);
+      Servers[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
+      sendGetResponseBody(&client, respHtml);
+      break;
+    }else if(i == Servers[serverIndex].Responses.size() - 1){
+      sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
+      sendGetResponseBody(&client, notFoundResp);
+      break;
     }
   }
 }

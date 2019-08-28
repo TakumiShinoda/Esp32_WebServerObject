@@ -31,6 +31,8 @@ class ServerObject{
     void addServer_proc(uint16_t port);
     void openServer_proc(uint16_t port);
     void requestHandle_proc(uint16_t port);
+    void requestHandle_get(WiFiClient client, uint16_t serverIndex, ChainArray request);
+    void requestHandle_post(WiFiClient client, uint16_t serverIndex, ChainArray request);
     void sendGetResponseHeader(WiFiClient *client, String status, String respType);
     void sendGetResponseBody(WiFiClient *client, String html);
     struct Response{
