@@ -1,15 +1,5 @@
 #include "ServerObject.h"
 
-void ServerObject::addServer_proc(uint16_t port){
-  struct Server server;
-  WiFiServer s(port);
-
-  server.port = port;
-  server.server = s;
-
-  Servers.push_back(server);
-}
-
 void ServerObject::addServer(uint16_t port){
   addServer_proc(port);
 }
@@ -20,18 +10,20 @@ void ServerObject::addServer(std::vector<uint16_t> ports){
   }
 }
 
-void ServerObject::openServer_proc(uint16_t port){
-  for(int i = 0; i < Servers.size(); i++){
-    if(Servers[i].port == port){
-      Servers[i].server.begin();
-      break;
-    }
-  }
+void ServerObject::addServer_proc(uint16_t port){
+  struct Server server;
+  WiFiServer s(port);
+
+  server.port = port;
+  server.server = s;
+
+  Servers_get.push_back(server); 
+  Servers_post.push_back(server);
 }
 
 void ServerObject::openAllServers(){
-  for(int i = 0; i < Servers.size(); i++){
-    Servers[i].server.begin();
+  for(int i = 0; i < Servers_get.size(); i++){
+    Servers_get[i].server.begin();
   }
 }
 
@@ -42,6 +34,15 @@ void ServerObject::openServer(uint16_t port){
 void ServerObject::openServer(std::vector<uint16_t> ports){
   for(int i = 0; i < ports.size(); i++){
     openServer_proc(ports[i]);
+  }
+}
+
+void ServerObject::openServer_proc(uint16_t port){
+  for(int i = 0; i < Servers_get.size(); i++){
+    if(Servers_get[i].port == port){
+      Servers_get[i].server.begin();
+      break;
+    }
   }
 }
 
@@ -64,11 +65,11 @@ void ServerObject::requestHandle_proc(uint16_t port){
   WiFiClient client;
   std::vector<String> keys;
 
-  for(int i = 0; i < Servers.size(); i++){
-    if(Servers[i].port != port) continue;
+  for(int i = 0; i < Servers_get.size(); i++){
+    if(Servers_get[i].port != port) continue;
 
     serverIndex = i;
-    client = Servers[serverIndex].server.available();
+    client = Servers_get[serverIndex].server.available();
     break;
   } 
 
@@ -80,7 +81,7 @@ void ServerObject::requestHandle_proc(uint16_t port){
     line = client.readStringUntil('\n');
     path = "";
     request = utils->analyzeRequestLine(line); 
-    request.add("port", String(Servers[serverIndex].port));
+    request.add("port", String(Servers_get[serverIndex].port));
 
     if(line.indexOf("GET") == 0){
       request.add("method", "GET");
@@ -108,35 +109,35 @@ void ServerObject::requestHandle_get(WiFiClient client, uint16_t serverIndex, Ch
   Serial.print("port: ");
   Serial.println(serverPort);
 
-  if(Servers[serverIndex].Responses.size() == 0){
+  if(Servers_get[serverIndex].Responses.size() == 0){
     sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
     sendGetResponseBody(&client, notFoundResp);
   }else{
-    for(int i = 0; i < Servers[serverIndex].Responses.size(); i++){
-      String registeredPath = Servers[serverIndex].Responses[i].url;
+    for(int i = 0; i < Servers_get[serverIndex].Responses.size(); i++){
+      String registeredPath = Servers_get[serverIndex].Responses[i].url;
 
       if(path == registeredPath){
-        String respHtml = Servers[serverIndex].Responses[i].response;
+        String respHtml = Servers_get[serverIndex].Responses[i].response;
 
-        sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverIndex].Responses[i].respType);
-        Servers[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
+        sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers_get[serverIndex].Responses[i].respType);
+        Servers_get[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
         sendGetResponseBody(&client, respHtml);
         break;
       }else if(
         registeredPath.substring(registeredPath.length() - 2) == "/*"  && 
         path.indexOf(registeredPath.substring(0, registeredPath.length() - 2)) == 0 
       ){
-        String respHtml = Servers[serverIndex].Responses[i].response;
+        String respHtml = Servers_get[serverIndex].Responses[i].response;
         String wildRootPath = registeredPath.substring(0, registeredPath.length() - 2);
 
         request.add("wildRootPath", wildRootPath);
         request.add("wildPath", path.substring(wildRootPath.length()));
-        sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverIndex].Responses[i].respType);
-        Servers[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
+        sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers_get[serverIndex].Responses[i].respType);
+        Servers_get[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
         sendGetResponseBody(&client, respHtml);
         break;
       }
-      if(i == Servers[serverIndex].Responses.size() - 1){
+      if(i == Servers_get[serverIndex].Responses.size() - 1){
         sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
         sendGetResponseBody(&client, notFoundResp);
         break;
@@ -184,36 +185,36 @@ void ServerObject::requestHandle_post(WiFiClient client, uint16_t serverIndex, C
   utils->debugPrint("Path", path);
   utils->debugPrint("Port", String(serverPort));
 
-  if(Servers[serverIndex].Responses.size() == 0){
+  if(Servers_post[serverIndex].Responses.size() == 0){
     sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
     sendGetResponseBody(&client, notFoundResp);
     return;
   }
 
-  for(int i = 0; i < Servers[serverIndex].Responses.size(); i++){
-    String registeredPath = Servers[serverIndex].Responses[i].url;
+  for(int i = 0; i < Servers_post[serverIndex].Responses.size(); i++){
+    String registeredPath = Servers_post[serverIndex].Responses[i].url;
 
     if(path == registeredPath){
-      String respHtml = Servers[serverIndex].Responses[i].response;
+      String respHtml = Servers_post[serverIndex].Responses[i].response;
 
-      sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverIndex].Responses[i].respType);
-      Servers[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
+      sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers_post[serverIndex].Responses[i].respType);
+      Servers_post[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
       sendGetResponseBody(&client, respHtml);
       break;
     }else if(
       registeredPath.substring(registeredPath.length() - 2) == "/*" && 
       path.indexOf(registeredPath.substring(0, registeredPath.length() - 1)) == 0 
     ){
-      String respHtml = Servers[serverIndex].Responses[i].response;
+      String respHtml = Servers_post[serverIndex].Responses[i].response;
       String wildRootPath = registeredPath.substring(0, registeredPath.length() - 1);
 
       request.add("wildRootPath", wildRootPath);
       request.add("wildPath", path.substring(wildRootPath.length()));
-      sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers[serverIndex].Responses[i].respType);
-      Servers[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
+      sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers_post[serverIndex].Responses[i].respType);
+      Servers_post[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
       sendGetResponseBody(&client, respHtml);
       break;
-    }else if(i == Servers[serverIndex].Responses.size() - 1){
+    }else if(i == Servers_post[serverIndex].Responses.size() - 1){
       sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
       sendGetResponseBody(&client, notFoundResp);
       break;
@@ -239,23 +240,35 @@ void ServerObject::sendGetResponseBody(WiFiClient *client, String html){
   }
 }
 
-void ServerObject::setResponse(uint16_t port, String url, Html *response, String respType){
-  for(int i = 0; i < Servers.size(); i++){
-    if(Servers[i].port == port){
-      if(Servers[i].findPath(url) >= 0){
-        Servers[i].updateResponse(url, response, respType);
-      }else{
-        Servers[i].setResponse(url, response, respType);
-      }
-      break;
+void ServerObject::setResponse(uint16_t port, String url, Html *response, String method, String respType){
+  std::vector<struct Server> *targetServers; 
+  
+  if(method == METHOD_GET) targetServers = &Servers_get;
+  else if(method == METHOD_POST) targetServers = &Servers_post; 
+  else return;
+
+  for(int i = 0; i < targetServers->size(); i++){ 
+    if(targetServers->at(i).port != port) continue;
+
+    if(targetServers->at(i).findPath(url) >= 0){
+      targetServers->at(i).updateResponse(url, response, respType);
+    }else{
+      targetServers->at(i).setResponse(url, response, respType);
     }
+    break;
   }
 }
 
-bool ServerObject::removeResponse(uint16_t port, String url){
-  for(int i = 0; i < Servers.size(); i++){
-    if(Servers[i].port == port){
-      return Servers[i].removeResponse(utils->fixPath(url));
+bool ServerObject::removeResponse(uint16_t port, String url, String method){
+  std::vector<struct Server> *targetServers;
+
+  if(method == METHOD_GET) targetServers = &Servers_get;
+  else if(method == METHOD_POST) targetServers = &Servers_post;
+  else return false;
+
+  for(int i = 0; i < targetServers->size(); i++){
+    if(targetServers->at(i).port == port){
+      return Servers_get[i].removeResponse(utils->fixPath(url));
     }
   }
   return false;

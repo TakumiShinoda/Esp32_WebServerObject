@@ -12,6 +12,9 @@
 #define RESPTYPE_JSON "application/json"
 #define RESPTYPE_CSV "text/csv"
 
+#define METHOD_GET "GET"
+#define METHOD_POST "POST"
+
 class Html;
 class Utils;
 class ServerObject{
@@ -23,9 +26,9 @@ class ServerObject{
     void openAllServers();
     void requestHandle(uint16_t port);
     void requestHandle(std::vector<uint16_t> ports);
-    void setResponse(uint16_t port, String url, Html *response, String respType = RESPTYPE_HTML);
+    void setResponse(uint16_t port, String url, Html *response, String method, String respType = RESPTYPE_HTML);
     void setNotFound(String resp);
-    bool removeResponse(uint16_t port, String path);
+    bool removeResponse(uint16_t port, String path, String method);
 
   private:
     void addServer_proc(uint16_t port);
@@ -85,7 +88,8 @@ class ServerObject{
       }
     };
     String notFoundResp = "404";
-    std::vector<struct Server> Servers;
+    std::vector<struct Server> Servers_get;
+    std::vector<struct Server> Servers_post;
     Utils *utils = new Utils();
 };
 
