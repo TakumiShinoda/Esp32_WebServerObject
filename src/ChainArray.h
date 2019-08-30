@@ -11,7 +11,9 @@ class ChainArray{
     void add(String key, String value);
     void remove(String key);
     std::vector<String> keys();
+    bool exist(String key); 
     void clear();
+    void showKeys(bool debugMessage);
 
   private:
     void addElement(String key, String value);

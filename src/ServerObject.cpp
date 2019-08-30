@@ -95,7 +95,7 @@ void ServerObject::requestHandle_proc(uint16_t port){
 }
 
 void ServerObject::requestHandle_get(WiFiClient client, uint16_t serverIndex, ChainArray request){ 
-  // uint8_t serverPos = request.get("port").toInt();
+  uint8_t serverPort = request.get("port").toInt();
   String path = request.get("path");
   ChainArray queries = utils->analyzeQuery(request.get("params"));
 
@@ -106,7 +106,7 @@ void ServerObject::requestHandle_get(WiFiClient client, uint16_t serverIndex, Ch
   Serial.println(path);
 
   Serial.print("port: ");
-  Serial.println(Servers[serverIndex].port);
+  Serial.println(serverPort);
 
   if(Servers[serverIndex].Responses.size() == 0){
     sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
@@ -176,8 +176,6 @@ void ServerObject::requestHandle_post(WiFiClient client, uint16_t serverIndex, C
     forJsonContent.add("body", body);
     queries = forJsonContent;
   }else queries = utils->analyzeQuery(body);
-
-  request.add("method", "POST");
   request.add("contentType", contentType);
 
   utils->debugPrint("Content-Type", contentType);

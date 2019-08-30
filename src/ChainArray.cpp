@@ -33,6 +33,14 @@ void ChainArray::addElement(String key, String value){
   }
 }
 
+void ChainArray::showKeys(bool debugMessage){
+  if(debugMessage) Serial.println("--- ChainArray 'showKey' Debug ---");
+  for(int i = 0; i < chainArrays.size(); i++){
+    Serial.println(chainArrays[i].key);
+  }
+  if(debugMessage) Serial.println("--- ChainArray 'showKey' Debug end ---");
+}
+
 std::vector<String> ChainArray::keys(){
   std::vector<String> result;
 
@@ -45,6 +53,14 @@ std::vector<String> ChainArray::keys(){
 
 void ChainArray::clear(){
   chainArrays.clear();
+}
+
+bool ChainArray::exist(String key){
+  for(int i = 0; i < chainArrays.size(); i++){
+    if(chainArrays[i].key == key) return true;
+  }
+  
+  return false;
 }
 
 String ChainArray::get(String key){
