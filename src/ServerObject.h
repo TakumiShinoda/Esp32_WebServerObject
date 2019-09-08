@@ -50,7 +50,6 @@ class ServerObject{
       std::vector<struct Response> Responses;
       void setResponse(String url, Html *response, String respType){
         struct Response resObj;
-        Html *test = response;
 
         resObj.respType = respType;
         resObj.url = url;
