@@ -227,7 +227,8 @@ void ServerObject::sendGetResponseHeader(WiFiClient *client, String status, Stri
   String response = "";
 
   response += "HTTP/1.0 " + status + " OK" + newLine;
-  response += "Content-Type: " + respType + newLine + newLine;
+  response += "Content-Type: " + respType + newLine;
+  response += "Access-Control-Allow-Origin: *" + newLine + newLine;
 
   for(int i = 0; i < response.length(); i++){
     client->print(response[i]);
