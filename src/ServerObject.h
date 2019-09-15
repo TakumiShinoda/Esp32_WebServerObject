@@ -6,7 +6,7 @@
 #include <vector>
 #include "ChainArray.h"
 #include "Utils.h"
-#include "Html.h"
+#include "ResponseHandler.h"
 
 #define RESPTYPE_HTML "text/html"
 #define RESPTYPE_JSON "application/json"
@@ -15,7 +15,7 @@
 #define METHOD_GET "GET"
 #define METHOD_POST "POST"
 
-class Html;
+class ResponseHandler;
 class Utils;
 class ServerObject{
   public:
@@ -26,7 +26,7 @@ class ServerObject{
     void openAllServers();
     void requestHandle(uint16_t port);
     void requestHandle(std::vector<uint16_t> ports);
-    void setResponse(uint16_t port, String url, Html *response, String method, String respType = RESPTYPE_HTML);
+    void setResponse(uint16_t port, String url, ResponseHandler *response, String method, String respType = RESPTYPE_HTML);
     void setNotFound(String resp);
     bool removeResponse(uint16_t port, String path, String method);
 
@@ -48,12 +48,12 @@ class ServerObject{
       uint16_t port;
       WiFiServer server;
       std::vector<struct Response> Responses;
-      void setResponse(String url, Html *response, String respType){
+      void setResponse(String url, ResponseHandler *response, String respType){
         struct Response resObj;
 
         resObj.respType = respType;
         resObj.url = url;
-        resObj.response = response->getHtml();
+        resObj.response = response->getResponseHandler();
         resObj.prevCallback = response->htmlObj.prev;
         Responses.push_back(resObj);
       };
@@ -65,13 +65,13 @@ class ServerObject{
         }
         return result;
       };
-      void updateResponse(String url, Html *response, String respType){
+      void updateResponse(String url, ResponseHandler *response, String respType){
         int16_t objIndex = findPath(url);
 
         if(objIndex >= 0){
           Responses[objIndex].respType = respType;
           Responses[objIndex].url = url;
-          Responses[objIndex].response = response->getHtml();
+          Responses[objIndex].response = response->getResponseHandler();
           Responses[objIndex].prevCallback = response->htmlObj.prev;
         }
       };

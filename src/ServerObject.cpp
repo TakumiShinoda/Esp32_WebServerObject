@@ -117,24 +117,24 @@ void ServerObject::requestHandle_get(WiFiClient client, uint16_t serverIndex, Ch
       String registeredPath = Servers_get[serverIndex].Responses[i].url;
 
       if(path == registeredPath){
-        String respHtml = Servers_get[serverIndex].Responses[i].response;
+        String respResponseHandler = Servers_get[serverIndex].Responses[i].response;
 
         sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers_get[serverIndex].Responses[i].respType);
-        Servers_get[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
-        sendGetResponseBody(&client, respHtml);
+        Servers_get[serverIndex].Responses[i].prevCallback(queries, request, &respResponseHandler, &client);
+        sendGetResponseBody(&client, respResponseHandler);
         break;
       }else if(
         registeredPath.substring(registeredPath.length() - 2) == "/*"  && 
         path.indexOf(registeredPath.substring(0, registeredPath.length() - 2)) == 0 
       ){
-        String respHtml = Servers_get[serverIndex].Responses[i].response;
+        String respResponseHandler = Servers_get[serverIndex].Responses[i].response;
         String wildRootPath = registeredPath.substring(0, registeredPath.length() - 2);
 
         request.add("wildRootPath", wildRootPath);
         request.add("wildPath", path.substring(wildRootPath.length()));
         sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers_get[serverIndex].Responses[i].respType);
-        Servers_get[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
-        sendGetResponseBody(&client, respHtml);
+        Servers_get[serverIndex].Responses[i].prevCallback(queries, request, &respResponseHandler, &client);
+        sendGetResponseBody(&client, respResponseHandler);
         break;
       }
       if(i == Servers_get[serverIndex].Responses.size() - 1){
@@ -195,24 +195,24 @@ void ServerObject::requestHandle_post(WiFiClient client, uint16_t serverIndex, C
     String registeredPath = Servers_post[serverIndex].Responses[i].url;
 
     if(path == registeredPath){
-      String respHtml = Servers_post[serverIndex].Responses[i].response;
+      String respResponseHandler = Servers_post[serverIndex].Responses[i].response;
 
       sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers_post[serverIndex].Responses[i].respType);
-      Servers_post[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
-      sendGetResponseBody(&client, respHtml);
+      Servers_post[serverIndex].Responses[i].prevCallback(queries, request, &respResponseHandler, &client);
+      sendGetResponseBody(&client, respResponseHandler);
       break;
     }else if(
       registeredPath.substring(registeredPath.length() - 2) == "/*" && 
       path.indexOf(registeredPath.substring(0, registeredPath.length() - 1)) == 0 
     ){
-      String respHtml = Servers_post[serverIndex].Responses[i].response;
+      String respResponseHandler = Servers_post[serverIndex].Responses[i].response;
       String wildRootPath = registeredPath.substring(0, registeredPath.length() - 1);
 
       request.add("wildRootPath", wildRootPath);
       request.add("wildPath", path.substring(wildRootPath.length()));
       sendGetResponseHeader(&client, queries.get("ResponseStatus"), Servers_post[serverIndex].Responses[i].respType);
-      Servers_post[serverIndex].Responses[i].prevCallback(queries, request, &respHtml, &client);
-      sendGetResponseBody(&client, respHtml);
+      Servers_post[serverIndex].Responses[i].prevCallback(queries, request, &respResponseHandler, &client);
+      sendGetResponseBody(&client, respResponseHandler);
       break;
     }else if(i == Servers_post[serverIndex].Responses.size() - 1){
       sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
@@ -240,7 +240,7 @@ void ServerObject::sendGetResponseBody(WiFiClient *client, String html){
   }
 }
 
-void ServerObject::setResponse(uint16_t port, String url, Html *response, String method, String respType){
+void ServerObject::setResponse(uint16_t port, String url, ResponseHandler *response, String method, String respType){
   std::vector<struct Server> *targetServers; 
   
   if(method == METHOD_GET) targetServers = &Servers_get;
