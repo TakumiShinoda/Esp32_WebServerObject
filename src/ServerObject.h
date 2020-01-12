@@ -15,6 +15,8 @@
 #define METHOD_GET "GET"
 #define METHOD_POST "POST"
 
+#define DEBUG_MODE false
+
 class ResponseHandler;
 class Utils;
 class ServerObject{
@@ -90,6 +92,13 @@ class ServerObject{
     std::vector<struct Server> Servers_get;
     std::vector<struct Server> Servers_post;
     Utils *utils = new Utils();
+
+    void debugPrint(String mes, bool newLine = true){ 
+      #if DEBUG_MODE == true
+        if(newLine) Serial.println(mes);
+        else Serial.print(mes);
+      #endif
+    }
 };
 
 #endif

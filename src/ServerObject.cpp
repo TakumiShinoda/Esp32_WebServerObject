@@ -76,7 +76,7 @@ void ServerObject::requestHandle_proc(uint16_t port){
   if(!client) return;
   if(!client.connected()) return;
 
-  Serial.println("New Client");
+  debugPrint("New Client");
   while(client.available()){
     line = client.readStringUntil('\n');
     path = "";
@@ -100,14 +100,14 @@ void ServerObject::requestHandle_get(WiFiClient client, uint16_t serverIndex, Ch
   String path = request.get("path");
   ChainArray queries = utils->analyzeQuery(request.get("params"));
 
-  Serial.print("From: ");
-  Serial.println(client.remoteIP());
+  debugPrint("From: ", false);
+  debugPrint(String(client.remoteIP()));
 
-  Serial.print("Path: ");
-  Serial.println(path);
+  debugPrint("Path: ", false);
+  debugPrint(path);
 
-  Serial.print("port: ");
-  Serial.println(serverPort);
+  debugPrint("port: ", false);
+  debugPrint(String(serverPort));
 
   if(Servers_get[serverIndex].Responses.size() == 0){
     sendGetResponseHeader(&client, "404", RESPTYPE_HTML);
@@ -155,7 +155,7 @@ void ServerObject::requestHandle_post(WiFiClient client, uint16_t serverIndex, C
   String path = request.get("path");
   uint8_t serverPort = request.get("port").toInt();
 
-  Serial.println("POST");
+  debugPrint("POST");
 
   while(client.available()){
     String postLine = client.readStringUntil('\n');
