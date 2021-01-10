@@ -178,6 +178,7 @@ void ServerObject::requestHandle_post(WiFiClient client, uint16_t serverIndex, C
     queries = forJsonContent;
   }else queries = utils->analyzeQuery(body);
   request.add("contentType", contentType);
+  request.add("body", body);
 
   utils->debugPrint("Content-Type", contentType);
   utils->debugPrint("Body", body);
