@@ -1,32 +1,46 @@
 #ifndef WIFI_CONNECTION_H
 #define WIFI_CONNECTION_H
 
-#include <WiFiMulti.h>
+#include <WiFi.h>
 
-#define TRY_CONNECT_AP 50
+bool connectAP(const char *ssid, const char *pass, unsigned long connectWaitMillis = 10000, unsigned long disconnectWaitMillis = 1000, bool withSerialPrint = true){
+  unsigned long startTime;
+  bool connectionResult = true;
 
-bool connectAP(const char *ssid, const char *pass){
-  WiFiMulti wifi;
-  uint8_t cnt = 0;
+  if(withSerialPrint) Serial.println("WiFi initializing");
+  WiFi.disconnect(true, true);
+  startTime = millis();
+  while(WiFi.status() == WL_CONNECTED){
+    if(withSerialPrint) Serial.print(".");
 
-  WiFi.mode(WIFI_MODE_STA);
-  WiFi.disconnect(true);
-  WiFi.begin("0","0");
-  delay(1000);
+    if((millis() - startTime) > disconnectWaitMillis) return false;
 
-  wifi.addAP(ssid, pass);
-  while((wifi.run(500) != WL_CONNECTED) && (cnt < TRY_CONNECT_AP)){
-    delay(500);
-    Serial.print(".");
-    cnt += 1;
+    vTaskDelay(100);
   }
-  if(wifi.run(1) != WL_CONNECTED) return false;
 
-  Serial.println("\nWiFi connected.");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  if(withSerialPrint) Serial.println("WiFi connecting");
+  WiFi.mode(WIFI_MODE_STA);
+  WiFi.begin(ssid, pass);
+  startTime = millis();
+  while(WiFi.status() != WL_CONNECTED){
+    if(withSerialPrint) Serial.print(".");
+    
+    if((millis() - startTime) > connectWaitMillis){
+      connectionResult = false;
+      break;
+    }
 
-  return true;
+    vTaskDelay(100);
+  }
+  if(withSerialPrint) Serial.println("");
+
+  if(connectionResult && withSerialPrint){
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+  }else WiFi.disconnect(true, true);
+
+  return connectionResult;
 }
 
 void startAP(const char *ssid, const char *pass){
